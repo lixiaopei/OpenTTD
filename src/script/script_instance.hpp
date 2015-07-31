@@ -246,7 +246,7 @@ private:
 	 * Call the script Load function if it exists and data was loaded
 	 *  from a savegame.
 	 */
-	bool CallLoad();
+	//bool CallLoad();
 
 	/**
 	 * Save one object (int / string / array / table) to the savegame.

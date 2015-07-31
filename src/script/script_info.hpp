@@ -149,7 +149,7 @@ public:
 	virtual bool IsDeveloperOnly() const { return false; }
 
 protected:
-	class Squirrel *engine;           ///< Engine used to register for Squirrel.
+	class Squirrel *engine;           ///< Engine used to register for Squirrel. Squirrel:松鼠
 	HSQOBJECT *SQ_instance;           ///< The Squirrel instance created for this info.
 	ScriptConfigItemList config_list; ///< List of settings from this Script.
 
