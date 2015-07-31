@@ -15,6 +15,20 @@
 #include "../spritecache.h"
 #include "../spriteloader/spriteloader.hpp"
 
+/*what is blitter?  look at https://wiki.openttd.org/Blitter
+The blitter's primary task is to draw sprites onto the screen. 
+色彩重映射和透明效果
+It has to handle colour remapping and transparency effects. Additional methods are provided to pre-encode the game's sprite data into a format preferred by the blitter.
+The following blitters exist in SVN:
+8bpp-simple: 8bpp Simple Blitter (relative slow, but never wrong)
+8bpp-optimized: 8bpp Optimized Blitter (compression + all-ZoomLevel cache)
+8bpp-debug: 8bpp Debug Blitter (testing only)
+32bpp-simple: 32bpp Simple Blitter (no palette animation)
+32bpp-optimized: 32bpp Optimized Blitter (no palette animation)
+32bpp-anim: 32bpp Animation Blitter (palette animation)
+null: Null Blitter (does nothing)
+*/
+
 /** The modes of blitting we can do. */
 enum BlitterMode {
 	BM_NORMAL,       ///< Perform the simple blitting.

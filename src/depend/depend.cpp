@@ -239,7 +239,7 @@ enum Token {
 typedef std::map<const char*, Token, StringCompare> KeywordList;
 
 /**
- * Lexer of a file.
+ * Lexer of a file.词法分析器
  */
 class Lexer {
 public:

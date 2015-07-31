@@ -29,15 +29,18 @@ class BlitterFactory {
 private:
 	const char *name;        ///< The name of the blitter factory.
 	const char *description; ///< The description of the blitter.
-
+	
+	/*用const char* 也可以作为map的key，作为比较方式，用StringCompare的struct来实现。这里的类型应该是BlitterFactory的map,所以命名是BlitterFactories比较好一些*/
 	typedef std::map<const char *, BlitterFactory *, StringCompare> Blitters; ///< Map of blitter factories.
 
 	/**
 	 * Get the map with currently known blitters.
 	 * @return The known blitters.
 	 */
+	//返回的是一个Blitters &,一个引用,厉害
 	static Blitters &GetBlitters()
 	{
+		//这个声明好恐怖啊,直接声明一个map,然后它的地址是一个new出来的东西,既然new出来的,到最后也要删除了
 		static Blitters &s_blitters = *new Blitters();
 		return s_blitters;
 	}
@@ -48,6 +51,8 @@ private:
 	 */
 	static Blitter **GetActiveBlitter()
 	{
+		//如果没有呢,则创建一个,由于是把**的方式传递出去,所以外边可以反向赋值.
+		//所以这里与其说是GetActiveBlitter,也可以修改未 CreateOrGetActiveBlitter()
 		static Blitter *s_blitter = NULL;
 		return &s_blitter;
 	}
@@ -64,13 +69,19 @@ protected:
 	 */
 	BlitterFactory(const char *name, const char *description, bool usable = true) :
 			name(stredup(name)), description(stredup(description))
-	{
+	{   //stredup,相当于malloc&copystr
+		/*strdup（）函数是c语言中常用的一种字符串拷贝库函数，一般和free（）函数成对出现。
+		*/
+	
 		if (usable) {
 			/*
 			 * Only add when the blitter is usable. Do not bail out or
 			 * do more special things since the blitters are always
 			 * instantiated upon start anyhow and freed upon shutdown.
 			 */
+			/*std::map的insert函数,返回结果有两个,iterator和bool,其中iterator应该是当前插入的对象的访问迭代器.
+			  bool,表示这一次插入是否成功.
+			*/
 			std::pair<Blitters::iterator, bool> P = GetBlitters().insert(Blitters::value_type(this->name, this));
 			assert(P.second);
 		} else {
@@ -80,10 +91,13 @@ protected:
 
 public:
 	virtual ~BlitterFactory()
-	{
+	{		
 		GetBlitters().erase(this->name);
+		
+		//果然做了delete,肩getBlitters()
 		if (GetBlitters().empty()) delete &GetBlitters();
 
+		//stredup得来的字符串,需要free
 		free(this->name);
 		free(this->description);
 	}
@@ -98,8 +112,10 @@ public:
 		BlitterFactory *b = GetBlitterFactory(name);
 		if (b == NULL) return NULL;
 
+		//用工厂生成一个Blitter
 		Blitter *newb = b->CreateInstance();
 		delete *GetActiveBlitter();
+		//得到的是双重地址,可以复制的.
 		*GetActiveBlitter() = newb;
 
 		DEBUG(driver, 1, "Successfully %s blitter '%s'", StrEmpty(name) ? "probed" : "loaded", newb->GetName());

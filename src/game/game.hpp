@@ -28,6 +28,7 @@ class Game {
 public:
 	/**
 	 * Called every game-tick to let Game do something.
+	 game的轮询函数
 	 */
 	static void GameLoop();
 
