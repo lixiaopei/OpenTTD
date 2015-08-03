@@ -1,3 +1,302 @@
 The files in this directory are not licensed under the same terms as the
 rest of OpenTTD. Licensing details can be found in OpenTTD's readme.txt
 and in this directory or subdirectories as well.
+
+
+1.声明变量,大小写敏感
+id:= [a-zA-Z_]+[a-zA-Z_0-9]*
+
+2.关键字
+break	case	catch	class	clone	continue
+const	default	delegate	delete	else	enum
+extends	for	foreach	function	if	in
+local	null	resume	return	switch	this
+throw	try	typeof	while	parent	yield
+constructor	vargc	vargv	instanceof	true	false
+static
+
+3.运算符
+!	!=	||	==	&&	<=	=>	>
++	+=	-	-=	/	/=	*	*=
+%	%=	++	--	<-	=	&	^
+|	~	>>	<<	>>>		
+
+4. 其他token
+{	}	[	]	.	:	::	'	;	"	@"	 
+
+5. comment
+/**/   
+//
+
+6. Values and Data types
+integer
+local a = 123
+local b = 075
+local a = 1.0
+local a = "I'm a wonderful string\n"
+local x = @"I'm a verbatim string\n"
+local a=null
+local a = true;
+local t={}
+local test=
+{
+    a=10
+    b=function(a) { return a+1; }
+}
+
+local a=["I'm","an","array"]
+local b=[null]
+b[0]=a[2];
+	
+
+
+
+
+http://wiki.squirrel-lang.org/default.aspx/SquirrelWiki/%E5%B5%8C%E5%85%A5%E5%85%A5%E9%97%A8.html
+嵌入入门
+Check out the formatting tips on the right for help formatting and making links.
+
+Use the template below:
+
+Summary
+作者: Alberto 翻译: XadillaX
+这个教程一步步解释了如何构建一个最小的Squirrel嵌入应用程序，载入和运行脚本。
+
+首先，让我们看一下下面的脚本和C代码，等一下我会详细解释它们是干什么的。
+
+Squirrel 代码
+
+    function foo(i, f, s) 
+    { 
+        print("Called foo(), i = " + i + ", f = " + f + ", s = '" + s + "'"); 
+    } 
+还有这是 C 代码
+
+C 代码
+
+    #include <stdarg.h> 
+    #include <stdio.h> 
+
+
+    #include <squirrel.h> 
+    #include <sqstdio.h> 
+    #include <sqstdaux.h> 
+
+
+    #ifdef _MSC_VER
+    #pragma comment(lib, "squirrel.lib")
+    #pragma comment(lib, "sqstdlib.lib")
+    #endif
+
+
+    #ifdef SQUNICODE 
+    #define scvprintf vwprintf 
+    #else 
+    #define scvprintf vprintf 
+    #endif 
+
+
+    void printfunc(HSQUIRRELVM v, const SQChar *s, ...) 
+    { 
+        va_list arglist; 
+        va_start(arglist, s); 
+        scvprintf(s, arglist); 
+        va_end(arglist); 
+    } 
+
+
+    void call_foo(HSQUIRRELVM v, int n, float f, const SQChar *s)
+    {
+        int top = sq_gettop(v);            // 在调用函数前保存栈大小
+        sq_pushroottable(v);               // push全局表
+        sq_pushstring(v, _SC("foo"), -1);
+        if(SQ_SUCCEEDED(sq_get(v, -2)))    // 从全局表中获取'foo'
+        { 
+            sq_pushroottable(v);           // push 'this' (这里指的是全局表)
+            sq_pushinteger(v, n); 
+            sq_pushfloat(v, f);
+            sq_pushstring(v, s, -1);
+            sq_call(v, 4, 0, 0);           // 调用函数
+        }
+
+
+        sq_settop(v, top);                 // 恢复栈大小
+    }
+
+
+    int main(int argc, char* argv[]) 
+    { 
+        HSQUIRRELVM v; 
+        v = sq_open(1024);                 // 创建一个 VM ，初始化栈大小为1024 
+
+
+        sqstd_seterrorhandlers(v);
+
+
+        sq_setprintfunc(v, printfunc, NULL); //设置打印函数
+
+
+        sq_pushroottable(v);               //push根表（脚本将要存储的全局环境）
+        if(SQ_SUCCEEDED(sqstd_dofile(v, _SC("test.nut"), 0, 1))) // 如果有，输出语法错误
+        {
+            call_foo(v, 1, 2.5, _SC("teststring"));
+        }
+
+
+        sq_pop(v,1);                       //pop根表
+        sq_close(v); 
+
+
+        return 0; 
+    } 
+初始化 Squirrel
+
+你首先要做的就是创建一个虚拟机(VM)
+
+    HSQUIRRELVM v = sq_open(1024);
+1024 就是初始栈大小
+
+Squirrel栈会自动增加，所以这个值只是一个给VM的参考值
+
+Squirrel 允许你定义自己的错误处理函数，这个例子使用了标准IO库中预制的。
+
+    sqstd_seterrorhandlers(v);
+为了能够使用像 print() 这样的函数来输出一些文字，为VM提供一个打印函数是非常必要的。
+
+    sq_setprintfunc(v, printfunc, NULL); //设置打印函数
+而这里就是打印函数 printfunc 的定义
+
+    void printfunc(HSQUIRRELVM v, const SQChar *s, ...) 
+    { 
+        va_list arglist; 
+        va_start(arglist, s); 
+        scvprintf(s, arglist); 
+        va_end(arglist); 
+    } 
+第三个参数 NULL 告诉VM不需要任何自定错误处理函数。
+
+运行脚本
+
+Squirrel 提供了一个底层API来从任何媒体文件中编译和运行脚本。
+
+无论如何，有90%的情况下，你想运行的脚本只是一个简单的文本文件，而且在编译后你就想马上运行它。
+
+最简单的方法就是使用标准IO库(sqstdio.h)。
+
+sqstd_dofile 编译并且运行一个脚本.
+
+    sq_pushroottable(v);
+    sqstd_dofile(v, "myscript.nut",0); 
+在运行脚本期间， sqstd_dofile 将在栈顶对象（这里代表根表）作为 this 使用。
+
+从 C++ 调用 Squirrel 函数
+
+Squirrel脚本中，我们作为举例的函数叫 foo。
+
+为了调用这个函数，我们首先要检索到它并且将它放到栈中。
+
+因为这个函数是在全局范围内声明的，所以是存放在根表中。
+
+    void call_foo(HSQUIRRELVM v, int n, float f, const SQChar *s)
+    {
+        int top = sq_gettop(v);            // 在调用函数前保存栈大小
+        sq_pushroottable(v);               // push全局表
+        sq_pushstring(v, _SC("foo"), -1);
+        if(SQ_SUCCEEDED(sq_get(v, -2)))    // 从全局表中获取'foo'
+        { 
+            sq_pushroottable(v);           // push 'this' (这里指的是全局表)
+            sq_pushinteger(v, n); 
+            sq_pushfloat(v, f);
+            sq_pushstring(v, s, -1);
+            sq_call(v, 4, 0, 0);           // 调用函数
+        }
+
+
+        sq_settop(v, top);                 // 恢复栈大小
+    }
+call_foo 调用函数 foo，并且传入一个integer, float 和 string 作为参数。
+
+让我们一行一行来分析。
+
+首先它记录了当前栈大小，这是为了在调用结束之后好清理。
+
+        int top = sq_gettop(v);
+放入根表，函数就是从这里获取的。
+
+        sq_pushroottable(v);
+负数索引	对象
+-1	根表
+...	...
+栈内数据
+
+将字符串 "foo" 放入，在这里代表我们将要调用的函数的slot名。
+
+        sq_pushstring(v,_SC("foo"),-1);
+参数-1指定VM将要自动计算字符串长度。
+
+负数索引	对象
+-1(顶)	"foo"
+-2	根表
+...	...
+栈内数据
+
+然后获取函数
+
+        if(SQ_SUCCEEDED(sq_get(v,-2)))
+函数 sq_get 将会从栈中拿出(pop)一个对象（这里代表了字符串"foo"）并且将它作为关键字从栈顶-2位
+
+置（在这里代表根表）获取对象。如果sq_get成功，则将结果放入栈中（这里结果指的便是 foo 函数）。
+
+负数索引	对象
+-1(顶)	function foo(){}
+-2	根表
+...	...
+站内数据 在调用 sq_get 之后
+
+现在向栈中放入函数的参数。根表被再一次放入，作为 this 参数使用。Squirrel函数总是有一个隐含参数 this（
+
+就像C++类成员一样）。
+
+    sq_pushroottable(v);
+    sq_pushinteger(v,n); 
+    sq_pushfloat(v,f);
+    sq_pushstring(v,s,-1);
+负数索引	对象
+-1(顶)	string
+-2	float
+-3	integer
+-4	根表
+-5	function foo(){}
+-6	根表
+...	...
+栈内数据
+
+最后 sq_call 函数被调用了。它执行实际的调用。
+
+    sq_call(v,4,0,0); 
+4 表示被调用函数有四个参数(this, integer, float, string)。
+
+Squirrel将会拿出4个参数然后连接。然后栈顶就变成了那个函数对象。
+
+第三个参数0告诉Squirrel它将调用的那个函数无返回值。如果不是0的话将会让Squirrel将函数返回值放入栈顶。
+
+第四个参数0告诉Squirrel当出现运行时错误时不要调用错误处理函数。
+
+负数索引	对象
+-1(顶)	function foo(){}
+-2	根表
+...	...
+栈内数据 调用 sq_call 之后
+
+函数已经被执行了，所以我们现在重置栈大小到初始状态。
+
+    sq_settop(v,top); //恢复初始栈状态
+清理
+
+之前我们放入了为了执行 sqstd_dofile 向栈中放入了根表，现在是时候把它删除了。
+
+    sq_pop(v,1); 
+在程序最后我们删除Squirrel VM。
+
+    sq_close(v); 
+这一步释放了所有先前分配空间。

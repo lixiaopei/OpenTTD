@@ -282,6 +282,7 @@ enum SaveLoadAction {
 	SLA_LOAD_CHECK,  ///< partial loading into #_load_check_data
 };
 
+/*是否需要长度,这个不知道具体干什么的,看代码再说吧.*/
 enum NeedLength {
 	NL_NONE = 0,       ///< not working in NeedLength mode
 	NL_WANTLENGTH = 1, ///< writing length and data
@@ -289,6 +290,7 @@ enum NeedLength {
 };
 
 /** Save in chunks of 128 KiB. */
+/*以128KiB为单位来存储数据,现在是1024个128k的存储区域*/
 static const size_t MEMORY_CHUNK_SIZE = 128 * 1024;
 
 /** A buffer for reading (and buffering) savegame data. */
@@ -1811,10 +1813,11 @@ static void SlSaveChunk(const ChunkHandler *ch)
 static void SlSaveChunks()
 {
 	FOR_ALL_CHUNK_HANDLERS(ch) {
+		//保存信息
 		SlSaveChunk(ch);
 	}
 
-	/* Terminator */
+	/* Terminator,填写结束符号*/
 	SlWriteUint32(0);
 }
 
@@ -2579,13 +2582,17 @@ static SaveOrLoadResult DoSave(SaveFilter *writer, bool threaded)
 
 	_sl_version = SAVEGAME_VERSION;
 
+	//保存界面上window的scroll的x,y和zoom设定
 	SaveViewportBeforeSaveGame();
+	
+	//对于每一个项目,保存信息,保存到内存
 	SlSaveChunks();
 
 	SaveFileStart();
 	if (!threaded || !ThreadObject::New(&SaveFileToDiskThread, NULL, &_save_thread)) {
 		if (threaded) DEBUG(sl, 1, "Cannot create savegame thread, reverting to single-threaded mode...");
 
+		//保存到文件
 		SaveOrLoadResult result = SaveFileToDisk(false);
 		SaveFileDone();
 
@@ -2775,6 +2782,42 @@ SaveOrLoadResult LoadWithFilter(LoadFilter *reader)
  * @param sb The sub directory to save the savegame in
  * @param threaded True when threaded saving is allowed
  * @return Return the result of the action. #SL_OK, #SL_ERROR, or #SL_REINIT ("unload" the game)
+ 
+ SaveOrLoad,上层调用的保存或者家在函数.
+ filename  文件名
+ mode:  enum SaveOrLoadMode {
+	SL_INVALID    = -1, ///< Invalid mode.
+	SL_LOAD       =  0, ///< Load game.
+	SL_SAVE       =  1, ///< Save game.
+	SL_OLD_LOAD   =  2, ///< Load old game.
+	SL_PNG        =  3, ///< Load PNG file (height map).
+	SL_BMP        =  4, ///< Load BMP file (height map).
+	SL_LOAD_CHECK =  5, ///< Load for game preview.
+};
+
+  sb:  enum Subdirectory {
+	BASE_DIR,      ///< Base directory for all subdirectories
+	SAVE_DIR,      ///< Base directory for all savegames
+	AUTOSAVE_DIR,  ///< Subdirectory of save for autosaves
+	SCENARIO_DIR,  ///< Base directory for all scenarios
+	HEIGHTMAP_DIR, ///< Subdirectory of scenario for heightmaps
+	OLD_GM_DIR,    ///< Old subdirectory for the music
+	OLD_DATA_DIR,  ///< Old subdirectory for the data.
+	BASESET_DIR,   ///< Subdirectory for all base data (base sets, intro game)
+	NEWGRF_DIR,    ///< Subdirectory for all NewGRFs
+	LANG_DIR,      ///< Subdirectory for all translation files
+	AI_DIR,        ///< Subdirectory for all %AI files
+	AI_LIBRARY_DIR,///< Subdirectory for all %AI libraries
+	GAME_DIR,      ///< Subdirectory for all game scripts
+	GAME_LIBRARY_DIR, ///< Subdirectory for all GS libraries
+	SCREENSHOT_DIR,   ///< Subdirectory for all screenshots
+	NUM_SUBDIRS,   ///< Number of subdirectories
+	NO_DIRECTORY,  ///< A path without any base directory
+};
+
+@param threaded True when threaded saving is allowed
+
+SaveOrLoad->(DoSave|DoLoad)
  */
 SaveOrLoadResult SaveOrLoad(const char *filename, int mode, Subdirectory sb, bool threaded)
 {

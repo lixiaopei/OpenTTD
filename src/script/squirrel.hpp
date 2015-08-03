@@ -14,7 +14,10 @@
 
 #include <squirrel.h>
 
-/** The type of script we're working with, i.e. for who is it? */
+/** The type of script we're working with, i.e. for who is it? 
+	ST_AI = Script type for ai
+	ST_GS = Script type for game scripts
+*/
 enum ScriptType {
 	ST_AI, ///< The script is for AI scripts.
 	ST_GS, ///< The script is for Game scripts.
