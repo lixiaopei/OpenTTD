@@ -133,9 +133,12 @@ struct GroundVehicle : public SpecializedVehicle<T, Type> {
 	 * Used when the vehicle entered given tile.
 	 * @pre The vehicle has to be at (or near to) a border of the tile,
 	 *      directed towards tile centre
+	 更新zorder,在上到slope上去的时候是不是特别重要.这个要好好地看.
 	 */
 	inline void UpdateZPositionAndInclination()
 	{
+		//得到当前位置地map地z值,修改groundVehicle地z_pos的值.
+		//这个得到的z值,使用的是和tile关联的tile的height的平均值.按照z_pos分层描绘.
 		this->z_pos = GetSlopePixelZ(this->x_pos, this->y_pos);
 		ClrBit(this->gv_flags, GVF_GOINGUP_BIT);
 		ClrBit(this->gv_flags, GVF_GOINGDOWN_BIT);

@@ -16,15 +16,15 @@
 #include "date_type.h"
 
 /** Various front vehicle properties that are preserved when autoreplacing, using order-backup or switching front engines within a consist. */
-struct BaseConsist {
-	char *name;                         ///< Name of vehicle
+struct BaseConsist {//汽车基本构成和时间线
+	char *name;                         ///< Name of vehicle 汽车名字
 
-	/* Used for timetabling. */
-	uint32 current_order_time;          ///< How many ticks have passed since this order started.
-	int32 lateness_counter;             ///< How many ticks late (or early if negative) this vehicle is.
-	Date timetable_start;               ///< When the vehicle is supposed to start the timetable.
+	/* Used for timetabling. */         ////timetable 时间表
+	uint32 current_order_time;          ///< How many ticks have passed since this order started.    当前时间表开始时间
+	int32 lateness_counter;             ///< How many ticks late (or early if negative) this vehicle is. 
+	Date timetable_start;               ///< When the vehicle is supposed to start the timetable.    什么时候时间表开始
 
-	uint16 service_interval;            ///< The interval for (automatic) servicing; either in days or %.
+	uint16 service_interval;            ///< The interval for (automatic) servicing; either in days or %. 
 
 	VehicleOrderID cur_real_order_index;///< The index to the current real (non-implicit) order
 	VehicleOrderID cur_implicit_order_index;///< The index to the current implicit order

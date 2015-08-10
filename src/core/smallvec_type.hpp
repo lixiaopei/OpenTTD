@@ -25,7 +25,7 @@
  * @tparam T The type of the items stored
  * @tparam S The steps of allocation
  */
-template <typename T, uint S>
+template <typename T, uint S>  //vector的简单实现
 class SmallVector {
 protected:
 	T *data;       ///< The pointer to the first item

@@ -16,25 +16,25 @@
 
 /** The type all our vehicle IDs have. */
 typedef uint32 VehicleID;
-
+//Vehicle 运输工具,汽车,飞机,轮船
 /** Available vehicle types. */
 enum VehicleType {
 	VEH_BEGIN,
 
-	VEH_TRAIN = VEH_BEGIN,        ///< %Train vehicle type.
-	VEH_ROAD,                     ///< Road vehicle type.
-	VEH_SHIP,                     ///< %Ship vehicle type.
-	VEH_AIRCRAFT,                 ///< %Aircraft vehicle type.
+	VEH_TRAIN = VEH_BEGIN,        ///< %Train vehicle type.  火车
+	VEH_ROAD,                     ///< Road vehicle type. 道路
+	VEH_SHIP,                     ///< %Ship vehicle type. 轮船
+	VEH_AIRCRAFT,                 ///< %Aircraft vehicle type. 飞机
 
-	VEH_COMPANY_END,              ///< Last company-ownable type.
+	VEH_COMPANY_END,              ///< Last company-ownable type.  可拥有的.
 
-	VEH_EFFECT = VEH_COMPANY_END, ///< Effect vehicle type (smoke, explosions, sparks, bubbles)
-	VEH_DISASTER,                 ///< Disaster vehicle type.
+	VEH_EFFECT = VEH_COMPANY_END, ///< Effect vehicle type (smoke, explosions, sparks, bubbles)    效果(冒烟,爆炸,烟火,泡泡)
+	VEH_DISASTER,                 ///< Disaster vehicle type.  灾难,毁掉了?
 
 	VEH_END,
-	VEH_INVALID = 0xFF,           ///< Non-existing type of vehicle.
+	VEH_INVALID = 0xFF,           ///< Non-existing type of vehicle. 不存在的类型
 };
-DECLARE_POSTFIX_INCREMENT(VehicleType)
+DECLARE_POSTFIX_INCREMENT(VehicleType)  //支持++,--
 /** Helper information for extract tool. */
 template <> struct EnumPropsT<VehicleType> : MakeEnumPropsT<VehicleType, byte, VEH_TRAIN, VEH_END, VEH_INVALID, 3> {};
 /** It needs to be 8bits, because we save and load it as such */
@@ -49,7 +49,7 @@ struct EffectVehicle;
 struct DisasterVehicle;
 
 /** Base vehicle class. */
-struct BaseVehicle
+struct BaseVehicle  //运输器材基础类,type,
 {
 	VehicleTypeByte type;    ///< Type of vehicle
 };

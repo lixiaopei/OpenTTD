@@ -732,3 +732,107 @@ Thanks to:
   All Translators                 - For their support to make OpenTTD a truly international game
   Bug Reporters                   - Thanks for all bug reports
   Chris Sawyer                    - For an amazing game!
+  
+  
+  
+  
+ 为枚举值添加++,--运算符
+ #define DECLARE_ENUM_INCREMENT(type) \
+    inline type operator ++(type& e, int) \
+    { \
+        type e_org = e; \
+        e = (type)((int)e + 1); \
+        return e_org; \
+    } \
+    inline type operator --(type& e, int) \
+    { \
+        type e_org = e; \
+        e = (type)((int)e - 1); \
+        return e_org; \
+    }
+
+	
+	
+	
+	
+	
+	
+	
+3D->2D 转换	
+/**
+ * Map 3D world or tile coordinate to equivalent 2D coordinate as used in the viewports and smallmap.
+ * @param x X world or tile coordinate (runs in SW direction in the 2D view).
+ * @param y Y world or tile coordinate (runs in SE direction in the 2D view).
+ * @param z Z world or tile coordinate (runs in N direction in the 2D view).
+ * @return Equivalent coordinate in the 2D view.
+ * @see RemapCoords2
+ */
+static inline Point RemapCoords(int x, int y, int z)
+{
+	Point pt;
+	pt.x = (y - x) * 2 * ZOOM_LVL_BASE;
+	pt.y = (y + x - z) * ZOOM_LVL_BASE;
+	return pt;
+}
+
+/**
+ * Map 3D world or tile coordinate to equivalent 2D coordinate as used in the viewports and smallmap.
+ * Same as #RemapCoords, except the Z coordinate is read from the map.
+ * @param x X world or tile coordinate (runs in SW direction in the 2D view).
+ * @param y Y world or tile coordinate (runs in SE direction in the 2D view).
+ * @return Equivalent coordinate in the 2D view.
+ * @see RemapCoords
+ */
+static inline Point RemapCoords2(int x, int y)
+{
+	return RemapCoords(x, y, GetSlopePixelZ(x, y));
+}
+
+static Point MapXYZToViewport(const ViewPort *vp, int x, int y, int z)
+{
+	Point p = RemapCoords(x, y, z);
+	p.x -= vp->virtual_width / 2;
+	p.y -= vp->virtual_height / 2;
+	return p;
+}
+
+
+
+/**
+ * Map 2D viewport or smallmap coordinate to 3D world or tile coordinate.
+ * Function assumes <tt>z == 0</tt>. For other values of \p z, add \p z to \a y before the call.
+ * @param x X coordinate of the 2D coordinate.
+ * @param y Y coordinate of the 2D coordinate.
+ * @return X and Y components of equivalent world or tile coordinate.
+ * @note Inverse of #RemapCoords function. Smaller values may get rounded.
+ */
+static inline Point InverseRemapCoords(int x, int y)
+{
+	Point pt = {(y * 2 - x) >> (2 + ZOOM_LVL_SHIFT), (y * 2 + x) >> (2 + ZOOM_LVL_SHIFT)};
+	return pt;
+}
+
+
+
+
+ground_vehicle
+inline void UpdateZPositionAndInclination()
+	{
+		//得到当前位置地map地z值,修改groundVehicle地z_pos的值.
+		//这个得到的z值,使用的是和tile关联的tile的height的平均值.按照z_pos分层描绘.
+		this->z_pos = GetSlopePixelZ(this->x_pos, this->y_pos);
+		ClrBit(this->gv_flags, GVF_GOINGUP_BIT);
+		ClrBit(this->gv_flags, GVF_GOINGDOWN_BIT);
+
+		if (T::From(this)->TileMayHaveSlopedTrack()) {
+			/* To check whether the current tile is sloped, and in which
+			 * direction it is sloped, we get the 'z' at the center of
+			 * the tile (middle_z) and the edge of the tile (old_z),
+			 * which we then can compare. */
+			int middle_z = GetSlopePixelZ((this->x_pos & ~TILE_UNIT_MASK) | (TILE_SIZE / 2), (this->y_pos & ~TILE_UNIT_MASK) | (TILE_SIZE / 2));
+
+			if (middle_z != this->z_pos) {
+				SetBit(this->gv_flags, (middle_z > this->z_pos) ? GVF_GOINGUP_BIT : GVF_GOINGDOWN_BIT);
+			}
+		}
+	}

@@ -16,15 +16,15 @@
 #include "enum_type.hpp"
 
 /** Various types of a pool. */
-enum PoolType {
+enum PoolType {   //池子类型
 	PT_NONE    = 0x00, ///< No pool is selected.
-	PT_NORMAL  = 0x01, ///< Normal pool containing game objects.
-	PT_NCLIENT = 0x02, ///< Network client pools.
-	PT_NADMIN  = 0x04, ///< Network admin pool.
-	PT_DATA    = 0x08, ///< NewGRF or other data, that is not reset together with normal pools.
+	PT_NORMAL  = 0x01, ///< Normal pool containing game objects.  包含游戏
+	PT_NCLIENT = 0x02, ///< Network client pools.  网络客户端
+	PT_NADMIN  = 0x04, ///< Network admin pool.  网络管理端
+	PT_DATA    = 0x08, ///< NewGRF or other data, that is not reset together with normal pools.  NewGREF
 	PT_ALL     = 0x0F, ///< All pool types.
 };
-DECLARE_ENUM_AS_BIT_SET(PoolType)
+DECLARE_ENUM_AS_BIT_SET(PoolType) //位操作
 
 typedef SmallVector<struct PoolBase *, 4> PoolVector; ///< Vector of pointers to PoolBase
 

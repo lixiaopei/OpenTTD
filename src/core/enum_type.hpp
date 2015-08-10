@@ -136,7 +136,7 @@ struct TinyEnumT {
 
 /** Template of struct holding enum types (on most archs, enums are stored in an int32). No math operators are provided. */
 template <typename enum_type, typename storage_type>
-struct SimpleTinyEnumT {
+struct SimpleTinyEnumT {  //给枚举值添加 = != &= 等操作
 	storage_type m_val;  ///< here we hold the actual value in small (i.e. byte) form
 
 	/** Cast operator - invoked then the value is assigned to the storage_type */
