@@ -21,7 +21,87 @@
 /* Why the hell is that not in all MSVC headers?? */
 extern "C" _CRTIMP void __cdecl _assert(void *, void *, unsigned);
 #endif
+/*
+https://wiki.openttd.org/MapRewriteDesign
+Summary of the biggest changes
 
+Okay, so I'll list here the main changes, point by point. Some of these are already coded, some are still in progress.
+Removed the unlabeled _map arrays and replaced them by a single, well defined and named struct.
+Removed all the integer literals used everywhere for the map by enums.
+Added an additional height level between every current height level (not a feature yet)
+Separated the surface of the tile from the stuff that is build upon it, in the struct they are stored in seperate elements.
+Added support for layered tiles. Apart from the normal ground tiles, additional tiles can be stacked above (or under) existing tiles. This way, bridges are for example seperate tiles from the ground underneath, for maximum flexibility.
+Added internal support for highway-style supports (not a feature yet)
+What is this multilayer stuff?
+
+Frames of reference
+
+In order not to cause any more confusion, I'll sum up the reference systems we should be using:
+Screen Reference System (SRS)
+Pixels on the screen. X runs across, Y down, defined in the struct "ScreenCoord"
+Map Reference System (MRS)
+Counts in units from the origin of the map and stores only X and Y coordinates. X runs from upper right to lower left. This is defined in PointXY.
+Full Reference System (FRS)
+Like the Map Reference System, but it stores a Z coordinate as well. The matching struct is a "Point"
+Map Tile System (MTS)
+Stores the X and Y position of a Tile, in units of one Tile; this should be stored in TStackXY. Again X runs from upper right to lower left.
+Tile Reference System (TRS)
+Counts in units from the nothern corner of the Tile. X from upper right to lower left, Y perpendicular, Z in the vertical axis. Stored as TileSubCoords.
+What does a tile look like now?
+
+Instead of having a lot of seperate unlabeled arrays which contain miscellaneous data, we will now store information about a tile in a struct appropriately named "Tile". The exact contents are to be found in the code (where?), but we will discuss the main lines here.
+A Tile will contain the following data:
+The owner of the tile. Players are indexed from 0 upwards, other special owners have constants defined.
+The height and slope of the tile. See below for what these values mean.
+A pointer to the next tile in the stack. The exact ordering of these tiles is as of yet undefined, has anybody got some ideas about this? Maybe these pointers should be in order of height? Maybe the should loop?
+The surface type of the tile. Think of things like "bridge", "ground", "support", "tunnel entrance", etc. This is basically anything that is the surface of the tile and/or below.
+The build type of the tile. Think of things like "tracks", "road", "buildings", "stations", "fields", "trees", etc. This is basically anything that is built on the surface of the tile.
+Information about the surface of the tile. This is stored as a union, with one element for each surface type. Which element is used in the tile is determined by the surface type of the tile.
+Information about the build on the tile. This a union, just like the information about the surface.
+There is also some stuff that isn't stored on a tile:
+The x and y coordinates of a tile. With the old map, when you wanted to pass a tile to a function, you just passed the index, which was essentially a condensed form of the x and y coordinates. With the index, information about the tile could be accessed. With the new map this won't work, since we must also pass the height of the tile. Unfortuanetely we can't just pass around x, y and z coordinates, since there can be multiple tiles at every z coordinate. So we will just pass around Tile pointers, right? Well, another problem is that if you just pass a pointer, you can't really determine the neighbouring tiles, since we don't store (x,y) in a Tile. So, we will have to pass around those (x,y) everywhere. So we will just build a struct TileRef than, which replaces the old TileIndex. (Note: this struct has not yet been defined anywhere).
+Information about what can be built on, above and under a tile. Some people have thought about storing this explicitely in the tile, but this information can always be implicetely determined from the tile. Because different tile and surface and build types allow for different things, we will define several type-dependent functions for that. (see below).
+How do we store heights and slopes then?
+
+In short, we will store one altitude for each tile, and 4 heights, one for each corner. To get the actual altitude of a corner, you take the tile altitude, multiply it by 4, and add the corner height to that. Simple as that :-)
+Some people will notice that altitude is 4 bits, so we could multiply it by 16 (or 8) before adding. The big problem with that is that then we can't have tile that has corner altitudes of (15, 15, 17, 17) for example. I can't really explain why, just draw out the example and I hope you'll see.
+Of course you should NEVER perform this calculation (or acces these values) directly, use the various helper functions (tile.h) for that.
+Definitions about a tile heights
+Two tiles in the same tile stack should never intersect. We also say that two tiles will never have identical corners. This means that for two givens tiles, some corner in one tile is higher than the corresponding corner in the other tile. To prevent intersection, all other corners in the first tile must be higher than the corresponding corners on the second tile.
+If tiles don't intersect, we can easily see which tile is higher than the other. Formally, we can say that a tile is higher than another tile, if any of it's corners is higher than the corresponding corner on the other tile.
+Now we have defined a unique ordering between two tiles, we can see that this ordering will work for more than two tiles. In other words, if A > B, and B > C, then A > C, which is also an important property.
+If anyone likes, I (Matthijs) could write up formal proof for all of this, but I don't think that's necessary?
+What should I use to manipulate tiles?
+
+Most people will be inclined to start using the _map array, with the various tile variables that are used everywhere as index. You shouldn't.
+This is because of 2 reasons. If everyone is just using the _map array, we can't change shit about how things are stored internally, without changing all the code again. Because of this, we will define functions to access the map. These functions can then be changed internally later on if that would be more efficient or better. This means that when using these functions, pay close attention to the comments above the function declaration and don't assume things.
+For example, it is most likely that the _map array will contain the ground tile and that all the tiles above and below the ground tile are stored in the linked list formed by Tile.next. But, you still need to use the GetGroundTile function to get to the ground tile, and GetTileAbove and GetTileBelow to get to the other tiles, for the exact order might change in the future.
+The second reason, or actually the second problem with dumbly converting, is that you can't just use the tile variable anymore. Because of the multilayer approach, you can't just address a tile by an index anymore. So, for addressing tiles, you will generally just use a Tile*. The biggest problem is that you can't determine an (x,y) from a Tile*, so if needed, you will pass a TileRef around. A TileRef just wraps a Tile* together with the TileXY. A tileXY is a reference to an entire stack of tiles on a given (x,y) coordinate. Lastly there is a TileXYN, but that is only used for sending tiles over the network.
+Notice that you can always translate a TileRef to a Tile* or a TileXY, but not the other way around!
+So, what functions should you use then? Not everyone have been defined yet, but you should definately take a look at map.h for the functions that acces tiles of the map, and at tile.h for functions that query individual tiles. There should be functions for a lot of common things, such as looking up the track type of a tile, etc. Check these files often, new functions will be introduced!
+When working with these tile things, try to use consistent variable namings: "t" for a Tile*, "tr" for a TileRef*, "txy" for a TileXY*.
+Variables, Variables, Variables
+
+It's nice to know how to store tiles, but it is even nicer to know how to store references to parts of the map.
+Within our openttd world, we can define three different concepts.
+Description	Referencable by
+The map	This is the collection of all tiles.	Not referencable, since we only have one map for now.
+Tile Stacks	The map is divided into squares using a grid. Each square has a x and y cooridnate. All the tiles in one square that have the same x and y coordinates, are called a tile stack. In other words, all tiles that are stacked on top of each other are a stack.	
+TStack ts
+This is a pointer to an entire stack (cannot be converted to a TileXY)	
+TStackXY tsxy
+This is the (x,y) location of a tile stack (can be easily converted to a TileStack)
+Tiles	A tile is a essentially an element of the tile stack. It is a square on a given x and y coordinate (iow, in a given tile stack) with a given height and slope.	
+Tile* t
+This is a pointer to a single tile (cannot be converted to a TileRef)	
+TileRef tr
+This is essentially the location of a single tile. It stores the (x,y) and height information of a tile (can be easily converted to a Tile*)
+Besides these referencing methods, there is also TileXYN, which is the network compatible variant of TileRef. You should not use it outside the network code.
+Miscelaneous other changes
+
+We changed the INLINE macro to inline on non C99 compatible platforms. So, if you define an inline function, just write "inline" instead of "INLINE". If you see INLINE anywhere, replace it by inline.
+We added an index into the _depots array for depot tiles. Currently the translation from a tile to a depot index is made by looping all depots until the right one is found. This is of course braindead. You should instead use DEREF_DEPOT(t->b.depot.index).
+*/
 uint _map_log_x;     ///< 2^_map_log_x == _map_size_x
 uint _map_log_y;     ///< 2^_map_log_y == _map_size_y
 uint _map_size_x;    ///< Size of the map along the X

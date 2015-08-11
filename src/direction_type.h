@@ -123,6 +123,8 @@ DECLARE_POSTFIX_INCREMENT(DiagDirDiff)
  * The X axis is the one which goes align the north-west edge
  * (and south-east edge). The Y axis must be so the one which goes
  * align the north-east edge (and south-west) edge.
+   x坐标轴的正方向位向左下方. y坐标轴的正方向是向右下方.
+   
  */
 enum Axis {
 	AXIS_X = 0,          ///< The X axis

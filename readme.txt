@@ -836,3 +836,9 @@ inline void UpdateZPositionAndInclination()
 			}
 		}
 	}
+	
+	
+	
+	http://openttd.sourcearchive.com/documentation/1.0.0-2/direction__type_8h_e3996976d8ffb3e58d88f58227473f8e.html#e3996976d8ffb3e58d88f58227473f8e
+	x坐标轴的正方向位向左下方. y坐标轴的正方向是向右下方.在map里面tile的index的算法是,    y<<maplogx + x 
+	
